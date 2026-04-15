@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace POP_lab3
@@ -35,19 +36,16 @@ namespace POP_lab3
             int[] producerShares = Distribute(totalItems, numProducers);
             int[] consumerShares = Distribute(totalItems, numConsumers);
 
-            var threads = new List<Thread>();
-
             for (int i = 0; i < numProducers; i++)
             {
                 int producerId = i + 1;
                 int producerItems = producerShares[i];
                 Console.WriteLine($"[Producer {producerId,2}] Created. Will produce {producerItems} units of product.");
 
-                Thread t = new Thread(() => Producer(producerId, producerItems))
+                new Thread(() => Producer(producerId, producerItems))
                 {
                     Name = $"Producer-{producerId}"
-                };
-                threads.Add(t);
+                }.Start();
             }
 
             Console.WriteLine();
@@ -58,27 +56,18 @@ namespace POP_lab3
                 int consumerItems = consumerShares[i];
                 Console.WriteLine($"[Consumer {consumerId,2}] Created. Will consume {consumerItems} units of product.");
 
-                Thread t = new Thread(() => Consumer(consumerId, consumerItems))
+                new Thread(() => Consumer(consumerId, consumerItems))
                 {
                     Name = $"Consumer-{consumerId}"
-                };
-                threads.Add(t);
+                }.Start();
             }
-
-            Console.WriteLine();
-
-            foreach (Thread t in threads)
-                t.Start();
         }
 
         private void Producer(int id, int itemCount)
         {
-            Random rng = new Random();
-
             for (int i = 0; i < itemCount; i++)
             {
                 Full.WaitOne();
-
                 Access.WaitOne();
 
                 string item = $"P{id}-item{i}";
@@ -86,7 +75,6 @@ namespace POP_lab3
                 Console.WriteLine($"[Producer {id,2}] Added: {item,-14} | Storage: {storage.Count}");
 
                 Access.Release();
-
                 Empty.Release();
 
                 // Thread.Sleep(rng.Next(100, 500));
@@ -97,20 +85,16 @@ namespace POP_lab3
 
         private void Consumer(int id, int itemCount)
         {
-            Random rng = new Random();
-
             for (int i = 0; i < itemCount; i++)
             {
                 Empty.WaitOne();
-
                 Access.WaitOne();
 
                 string item = storage[0];
                 storage.RemoveAt(0);
-                Console.WriteLine($"[Consumer {id,2}] Added: {item,-14} | Storage: {storage.Count}");
+                Console.WriteLine($"[Consumer {id,2}] Taken:  {item,-14} | Storage: {storage.Count}");
 
                 Access.Release();
-
                 Full.Release();
 
                 // Thread.Sleep(rng.Next(100, 500));
